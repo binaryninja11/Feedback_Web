@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from app.views import router
+# from app.views import router
+from app.views import auth , students, teacher,admin
 
 app = FastAPI()
 
@@ -26,8 +27,11 @@ app.add_middleware(
 )
 
 
-app.include_router(router.router)
-
+# app.include_router(router.router)
+app.include_router(auth.router)
+app.include_router(students.router)
+app.include_router(teacher.router)
+app.include_router(admin.router)
 
 @app.get("/")
 async def root():
