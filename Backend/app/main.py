@@ -8,8 +8,6 @@ from app.views import router
 app = FastAPI()
 
 
-
-
 origins = [
     "http://localhost",
     "http://localhost:8080",
