@@ -112,9 +112,9 @@ async def post_student_feedback(
                 raise HTTPException(status_code=400, detail="Question not found")
 
             # Check if the question is of type "Multiple Choice"
-            if question.type == schema.QuestionType.multiple:
+            if question.type == schema.QuestionType.multiple.value:
                 # Check if the answer is valid
-                if feedback.answer not in schema.MultipleChoiceQuestion:
+                if feedback.answer not in schema.MultipleChoiceQuestion.value:
                     raise HTTPException(status_code=400, detail="Invalid answer for Multiple Choice question")
 
             # Check if the question is required
