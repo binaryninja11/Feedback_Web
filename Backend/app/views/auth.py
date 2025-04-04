@@ -93,7 +93,7 @@ async def login_for_access_token(
             )
 
 
-        access_token = auth_utils.create_access_token(data={"sub": student.stdid})
+        access_token = await auth_utils.create_access_token(data={"sub": student.stdid})
 
         return Token(access_token=access_token, token_type="bearer")
 
@@ -110,3 +110,5 @@ async def login_for_access_token(
 async def read_users_me(current_user: Annotated[Student, Depends(auth_utils.get_current_user)]):
     """Retrieve details of the currently authenticated student."""
     return current_user
+
+

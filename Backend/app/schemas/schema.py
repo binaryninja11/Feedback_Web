@@ -11,7 +11,17 @@ class Major(str, Enum):
     ad = "Art and Design"
     me = "Mechanical Engineering"
 
+class QuestionType(str, Enum):
+    multiple = "Multiple Choice"
+    comment = "Comment"
 
+class MultipleChoiceQuestion(str, Enum):
+    excellent = "Excellent"
+    very_Good = "Very Good"
+    good = "Good"
+    fair = "Fair"
+    poor = "Poor"
+    very_Poor = "Very Poor"
 
 class SignUpStudent(BaseModel):
     stdid: str
@@ -106,3 +116,36 @@ class StudentId(BaseModel):
 
     class Config:
         from_attributes = True
+
+class EnrollmentStudentSubjects(BaseModel):
+    subject_id: int
+    subject_name: str
+    feedback: bool
+
+    class Config:
+        from_attributes = True
+
+
+
+class CreateQuestion(BaseModel):
+    header: Optional[str] = None
+    body: str
+    requirement: bool
+    type: QuestionType
+
+class ResponseQuestion(BaseModel):
+    id: int
+    order: int
+    header: Optional[str] = None
+    body: str
+    requirement: bool
+    type: QuestionType
+
+    class Config:
+        from_attributes = True
+
+
+class post_student_feedback(BaseModel):
+    question_id: int
+    answer: str
+

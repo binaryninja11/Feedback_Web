@@ -58,7 +58,10 @@ admin_db = {
 
 async def authenticate_user(db: Session, username: str, password: str):
     """Authenticate user by checking credentials against the database."""
-    admin = admin_db[username]
+    try:
+        admin = admin_db[username]
+    except KeyError:
+        admin = None
 
     if not admin or not verify_password(password, admin.password):
         return None
@@ -112,7 +115,7 @@ async def read_users_me(current_user: Annotated[Student, Depends(get_current_use
 
 # Create a new subject
 @router.post("/subject")
-async def get_subjects(
+async def create_new_subjects(
     subject: schema.CreateSubject,
     current_user: Annotated[Student, Depends(get_current_user)],
     db: Session = Depends(get_db)
@@ -207,6 +210,91 @@ async def add_students_to_subject(
             await crud.create_enrollment(db=db, subject_id=enrollments.subject_id, student_id=student_id)
 
         return "Students added to subject successfully"
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+# create new question
+@router.post("/question")
+async def create_new_question(
+    question: schema.CreateQuestion,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        order = await crud.get_last_order_in_questions(db=db)
+
+        # Create the question
+        new_question = await crud.create_question(db=db, question=question,order=order+1)
+
+        return "Question created successfully"
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+# delete question
+@router.delete("/question/{question_id}")
+async def delete_question(
+    question_id: int,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        # Check if the question exists
+        question = await crud.get_question_by_id(db=db, question_id=question_id)
+
+        if not question:
+            raise HTTPException(status_code=404, detail="Question not found")
+
+        # Delete the question
+        await crud.delete_question(db=db, question_id=question_id)
+
+        return "Question deleted successfully"
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+# replace question order
+@router.put("/question/order")
+async def replace_question_order(
+    question_id_order_one: int,
+    question_id_order_two: int,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        # Check if the questions exist
+        question1 = await crud.get_question_by_id(db=db, question_id=question_id_order_one)
+        question2 = await crud.get_question_by_id(db=db, question_id=question_id_order_two)
+
+        if not question1 or not question2:
+            raise HTTPException(status_code=404, detail="One or both questions not found")
+
+        # Swap the order
+        await crud.order_update_questions(db=db, question_id_order_one=question_id_order_one, question_id_order_two=question_id_order_two)
+
+        return "Question order replaced successfully"
 
     except HTTPException as http_exc:
         raise http_exc

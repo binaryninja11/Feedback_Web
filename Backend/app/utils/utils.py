@@ -69,6 +69,10 @@ async def get_current_user(token: str = Depends(oauth2_bearer), db: Session = De
         user = await get_student_by_stdid(db, payload["sub"])
         if user is None:
             raise credentials_exception
+
+        if user.is_active == False:
+            raise HTTPException(status_code=401, detail="User is inactive")
+
         return user
     except (InvalidTokenError, ExpiredSignatureError):
         raise credentials_exception
