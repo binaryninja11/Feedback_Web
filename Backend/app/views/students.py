@@ -96,10 +96,15 @@ async def post_student_feedback(
         if not subject:
             raise HTTPException(status_code=400, detail="Subject not found")
 
+
         # Check if the student is enrolled in the subject
         enrollment = await crud.get_enrollment_by_student_and_subject(db=db, student_id=current_user.id,subject_id=subject_id)
         if not enrollment:
             raise HTTPException(status_code=400, detail="Student is not enrolled in this subject")
+
+        # Check if the student give feedback for the subject
+        if enrollment.feedback == True:
+            raise HTTPException(status_code=400, detail="Student has already given feedback for this subject")
 
         # get all required questions ids
         required_questions_ids = await crud.get_requrtmen_question_id(db=db)

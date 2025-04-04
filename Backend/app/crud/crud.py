@@ -277,3 +277,39 @@ async def UpdateStudentLevel(db: Session):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
+# get all teachers tid,name,last_name
+async def get_all_teachers_tid_name_and_last(db: Session) -> List[schema.ResponseTeacher]:
+    try:
+        result = db.execute(
+            select(
+                Teacher.tid,
+                Teacher.name,
+                Teacher.last_name
+            ).filter(Teacher.is_active == True)
+        )
+
+        teachers = result.mappings().all()
+
+        return [schema.ResponseTeacher(**teacher) for teacher in teachers]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+# get all subjects id,name
+async def get_all_subjects_id_and_name(db: Session) -> List[schema.ResponseSujectIdName]:
+    try:
+        result = db.execute(
+            select(
+                Subject.id.label("subject_id"),
+                Subject.subject_name
+            ).filter(Subject.is_active == True)
+        )
+
+        subjects = result.mappings().all()
+
+        return [schema.ResponseSujectIdName(**subject) for subject in subjects]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

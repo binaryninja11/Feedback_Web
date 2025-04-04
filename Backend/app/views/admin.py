@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, List
 
 import jwt
 import os
@@ -113,6 +113,50 @@ async def login_for_access_token(
 async def read_users_me(current_user: Annotated[Student, Depends(get_current_user)]):
     return current_user
 
+#  get all teachers tid , name nad lastname
+@router.get("/teachers", response_model=List[schema.ResponseTeacher])
+async def get_all_teachers(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        teachers = await crud.get_all_teachers_tid_name_and_last(db=db)
+
+        if not teachers:
+            raise HTTPException(status_code=404, detail="No teachers found")
+
+        return teachers
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+#  get all subjects id and name
+@router.get("/subjects", response_model=List[schema.ResponseSujectIdName])
+async def get_all_subjects(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        subjects = await crud.get_all_subjects_id_and_name(db=db)
+
+        if not subjects:
+            raise HTTPException(status_code=404, detail="No subjects found")
+
+        return subjects
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
 # Create a new subject
 @router.post("/subject")
 async def create_new_subjects(
@@ -218,6 +262,30 @@ async def add_students_to_subject(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# get all questions
+@router.get("/questions", response_model=List[schema.ResponseQuestion])
+async def get_questions(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        questions = await crud.get_questions(db=db)
+
+        if not questions:
+            raise HTTPException(status_code=404, detail="No questions found")
+
+        return questions
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
 # create new question
 @router.post("/question")
 async def create_new_question(
@@ -275,8 +343,7 @@ async def delete_question(
 # replace question order
 @router.put("/question/order")
 async def replace_question_order(
-    question_id_order_one: int,
-    question_id_order_two: int,
+    question: schema.ChangeQuestionOrder,
     current_user: Annotated[Student, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ):
@@ -285,14 +352,14 @@ async def replace_question_order(
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
         # Check if the questions exist
-        question1 = await crud.get_question_by_id(db=db, question_id=question_id_order_one)
-        question2 = await crud.get_question_by_id(db=db, question_id=question_id_order_two)
+        question1 = await crud.get_question_by_id(db=db, question_id=question.question_id_order_one)
+        question2 = await crud.get_question_by_id(db=db, question_id=question.question_id_order_two)
 
         if not question1 or not question2:
             raise HTTPException(status_code=404, detail="One or both questions not found")
 
         # Swap the order
-        await crud.order_update_questions(db=db, question_id_order_one=question_id_order_one, question_id_order_two=question_id_order_two)
+        await crud.order_update_questions(db=db, question_id_order_one=question.question_id_order_one, question_id_order_two=question.question_id_order_two)
 
         return "Question order replaced successfully"
 
@@ -329,3 +396,6 @@ async def create_new_academic_year_or_semester(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
+

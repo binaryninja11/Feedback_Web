@@ -156,4 +156,22 @@ class post_student_feedback(BaseModel):
 class CreateAcademicYear(BaseModel):
     aos: AcademicYearOrSemester
 
+class ResponseTeacher(BaseModel):
+    tid: str
+    name: str
+    last_name: str
 
+    class Config:
+        from_attributes = True
+
+
+class ResponseSujectIdName(BaseModel):
+    subject_id: int
+    subject_name: str
+
+    class Config:
+        from_attributes = True
+
+class ChangeQuestionOrder(BaseModel):
+    question_id_order_one: int
+    question_id_order_two: int
