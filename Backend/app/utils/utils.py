@@ -50,7 +50,7 @@ async def authenticate_user(db: Session, stdid: str, password: str):
     """Authenticate user by checking credentials against the database."""
     student = await get_student_by_stdid(db, stdid)
 
-    if not student or not verify_password(password, student.hashed_password):
+    if not student or not await verify_password(password, student.hashed_password):
         return None
     return student
 
