@@ -1,14 +1,13 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.schemas import schema
 from app.crud import crud
 
-from starlette.concurrency import run_in_threadpool
+
 
 from app.utils import utils as auth_utils
 
@@ -87,7 +86,7 @@ async def get_question(
 @router.post("/feedback/{subject_id}")
 async def post_student_feedback(
     subject_id: int ,
-    feedbacks: list[schema.post_student_feedback],
+    feedbacks: list[schema.post_student_feedback] = Body(...),
     current_user: schema.Student = Depends(auth_utils.get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -111,10 +110,9 @@ async def post_student_feedback(
             if not question:
                 raise HTTPException(status_code=400, detail="Question not found")
 
-            # Check if the question is of type "Multiple Choice"
-            if question.type == schema.QuestionType.multiple.value:
-                # Check if the answer is valid
-                if feedback.answer not in schema.MultipleChoiceQuestion.value:
+            # Check if the answer is valid for Multiple Choice questions
+            if question.type == schema.QuestionType.multiple:
+                if feedback.answer not in {choice.value for choice in schema.MultipleChoiceQuestion}:
                     raise HTTPException(status_code=400, detail="Invalid answer for Multiple Choice question")
 
             # Check if the question is required
@@ -131,13 +129,17 @@ async def post_student_feedback(
 
 
         # creates feedbacks
-
         feedbaks = await crud.create_student_feedbacks(db=db,
                                                        feedbacks=feedbacks,
-                                                       student_id=current_user.id,
                                                        subject_id=subject_id)
 
-        return feedback
+        # enrrolment feed bak true
+        enrollment_to_true = await crud.enrollment_feedback_true(db=db,
+                                                     student_id=current_user.id,
+                                                     subject_id=subject_id)
+
+
+        return "successfully created feedbacks for the subject"
 
     except HTTPException as http_exc:
         raise http_exc

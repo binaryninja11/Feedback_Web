@@ -302,3 +302,30 @@ async def replace_question_order(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+
+# New academic year or semester API route
+@router.post("/newacademic")
+async def create_new_academic_year_or_semester(
+    academic_year: schema.CreateAcademicYear,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        if academic_year.aos.value == schema.AcademicYearOrSemester.semester.value:
+            return await crud.new_semester(db=db)
+
+        elif academic_year.aos.value == schema.AcademicYearOrSemester.academic_year.value:
+            return await crud.UpdateStudentLevel(db=db)
+
+        raise HTTPException(status_code=400, detail="Invalid type, use 'semester' or 'academic'")
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

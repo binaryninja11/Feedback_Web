@@ -202,14 +202,13 @@ async def get_requrtmen_question_id(db: Session) -> List[int]:
 async def create_student_feedback(
         db: Session,
         feedback: schema.post_student_feedback,
-        student_id: int,
+
         subject_id: int
 ):
     new_feedback = Feedback(
         question_id=feedback.question_id,
         answer=feedback.answer,
         is_active=True,
-        student_id=student_id,
         subject_id=subject_id
     )
 
@@ -221,8 +220,60 @@ async def create_student_feedback(
 # multiple feedbacks
 async def create_student_feedbacks(
         db: Session,
-        feedback: list[schema.post_student_feedback],
+        feedbacks: list[schema.post_student_feedback],
+        subject_id: int
+):
+    if not feedbacks:
+        raise HTTPException(status_code=400, detail="No feedbacks provided")
+
+    new_feedbacks = [
+        Feedback(
+            question_id=feedback.question_id,
+            answer=feedback.answer,
+            is_active=True,
+            subject_id=subject_id
+        )
+        for feedback in feedbacks
+    ]
+
+    db.add_all(new_feedbacks)
+    db.commit()
+
+    return new_feedbacks
+
+async def enrollment_feedback_true(
+        db: Session,
         student_id: int,
         subject_id: int
 ):
-    return ...
+    enrollment = db.query(Enrollment).filter(Enrollment.student_id == student_id, Enrollment.subject_id == subject_id).first()
+
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+
+    enrollment.feedback = True
+    db.commit()
+    db.refresh(enrollment)
+
+    return "successfully updated feedback to true"
+
+# Delete all enrollments (New Semester)
+async def new_semester(db: Session):
+    try:
+        db.query(Enrollment).delete(synchronize_session="fetch")
+        db.commit()
+        return "Successfully updated semester"
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+# Update all student levels (New Academic Year)
+async def UpdateStudentLevel(db: Session):
+    try:
+        db.query(Student).update({Student.level: Student.level + 1}, synchronize_session="fetch")
+        db.query(Enrollment).delete(synchronize_session="fetch")
+        db.commit()
+        return "Successfully updated academic year"
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

@@ -23,6 +23,10 @@ class MultipleChoiceQuestion(str, Enum):
     poor = "Poor"
     very_Poor = "Very Poor"
 
+class AcademicYearOrSemester(str, Enum):
+    academic_year = "academic"
+    semester = "semester"
+
 class SignUpStudent(BaseModel):
     stdid: str
     name: str
@@ -148,4 +152,8 @@ class ResponseQuestion(BaseModel):
 class post_student_feedback(BaseModel):
     question_id: int
     answer: str
+
+class CreateAcademicYear(BaseModel):
+    aos: AcademicYearOrSemester
+
 
