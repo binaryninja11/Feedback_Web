@@ -137,9 +137,8 @@ class CreateQuestion(BaseModel):
     requirement: bool
     type: QuestionType
 
-class ResponseQuestion(BaseModel):
+class ResponseQuestionWithActive(BaseModel):
     id: int
-    order: int
     header: Optional[str] = None
     body: str
     requirement: bool
@@ -148,10 +147,27 @@ class ResponseQuestion(BaseModel):
     class Config:
         from_attributes = True
 
+class ResponseQuestion(BaseModel):
+    id: int
+    order: int
+    header: Optional[str] = None
+    body: str
+    requirement: bool
+    type: QuestionType
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
 
 class post_student_feedback(BaseModel):
     question_id: int
     answer: str
+
+class create_feedback_with_qtype(BaseModel):
+     question_id: int
+     answer: str
+     type: bool
 
 class CreateAcademicYear(BaseModel):
     aos: AcademicYearOrSemester
@@ -175,3 +191,6 @@ class ResponseSujectIdName(BaseModel):
 class ChangeQuestionOrder(BaseModel):
     question_id_order_one: int
     question_id_order_two: int
+
+class Action_to_archive(BaseModel):
+    is_active: bool = False

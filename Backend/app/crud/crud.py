@@ -145,6 +145,23 @@ async def create_question(db: Session, question: schema.CreateQuestion,order: in
 async def get_question_by_id(db: Session, question_id: int):
     return db.query(Question).filter(Question.id == question_id).first()
 
+async def get_questions_with_active(db: Session) -> List[schema.ResponseQuestionWithActive]:
+    result = db.execute(
+        select(
+            Question.id,
+            Question.header,
+            Question.body,
+            Question.requirement,
+            Question.type,
+        )
+        .filter(Question.is_active == True)
+        .order_by(Question.order)
+    )
+
+    questions = result.mappings().all()
+
+    return [schema.ResponseQuestionWithActive(**question) for question in questions]
+
 async def get_questions(db: Session) -> List[schema.ResponseQuestion]:
     result = db.execute(
         select(
@@ -153,7 +170,8 @@ async def get_questions(db: Session) -> List[schema.ResponseQuestion]:
             Question.header,
             Question.body,
             Question.requirement,
-            Question.type
+            Question.type,
+            Question.is_active
         )
         .order_by(Question.order)
     )
@@ -220,7 +238,7 @@ async def create_student_feedback(
 # multiple feedbacks
 async def create_student_feedbacks(
         db: Session,
-        feedbacks: list[schema.post_student_feedback],
+        feedbacks: list[schema.create_feedback_with_qtype],
         subject_id: int
 ):
     if not feedbacks:
@@ -231,7 +249,8 @@ async def create_student_feedbacks(
             question_id=feedback.question_id,
             answer=feedback.answer,
             is_active=True,
-            subject_id=subject_id
+            subject_id=subject_id,
+            qestion_type=feedback.type
         )
         for feedback in feedbacks
     ]
@@ -313,3 +332,16 @@ async def get_all_subjects_id_and_name(db: Session) -> List[schema.ResponseSujec
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+# In crud.py or wherever your logic is
+async def archive_question_by_id(db: Session, question_id: int,action: bool):
+    try:
+        question = db.query(Question).filter(Question.id == question_id).first()
+        if not question:
+            raise HTTPException(status_code=404, detail="Question not found")
+        question.is_active = action
+        db.commit()
+        db.refresh(question)
+        return "Question archived successfully"
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))

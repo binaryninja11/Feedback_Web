@@ -370,6 +370,33 @@ async def replace_question_order(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# archive question
+@router.put("/question/archive/{question_id}")
+async def archive_question(
+    question_id: int,
+    action: schema.Action_to_archive,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        question = await crud.get_question_by_id(db=db, question_id=question_id)
+        if not question:
+            raise HTTPException(status_code=404, detail="Question not found")
+
+        result = await crud.archive_question_by_id(db=db, question_id=question_id, action=action.is_active)
+
+        return result  # "Question archived successfully"
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
 
 # New academic year or semester API route
 @router.post("/newacademic")
@@ -396,6 +423,8 @@ async def create_new_academic_year_or_semester(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
 
 
 

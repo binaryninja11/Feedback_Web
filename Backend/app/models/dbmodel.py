@@ -63,6 +63,7 @@ class Feedback(Base):
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     answer = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True)
+    qestion_type = Column(Boolean, nullable=True)
 
     question = relationship("Question", back_populates="feedbacks")
     subject = relationship("Subject", back_populates="feedbacks")

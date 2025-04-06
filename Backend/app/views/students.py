@@ -59,7 +59,7 @@ async def get_enrollment_subjects(
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
 # ✅ get_questions
-@router.get("/questions", response_model=List[schema.ResponseQuestion])
+@router.get("/questions", response_model=List[schema.ResponseQuestionWithActive])
 async def get_question(
     current_user: schema.Student = Depends(auth_utils.get_current_user),
     db: Session = Depends(get_db)
@@ -67,7 +67,7 @@ async def get_question(
     try:
 
         # Get questions
-        questions = await crud.get_questions(db=db)
+        questions = await crud.get_questions_with_active(db=db)
 
         if not questions:
             raise HTTPException(status_code=400, detail="No questions found for this student")
@@ -109,7 +109,10 @@ async def post_student_feedback(
         # get all required questions ids
         required_questions_ids = await crud.get_requrtmen_question_id(db=db)
 
+        feedbaks_with_qtype = []
+
         for feedback in feedbacks:
+            question_type = False
             # Check if the question exists
             question = await crud.get_question_by_id(db=db, question_id=feedback.question_id)
             if not question:
@@ -120,6 +123,8 @@ async def post_student_feedback(
                 if feedback.answer not in {choice.value for choice in schema.MultipleChoiceQuestion}:
                     raise HTTPException(status_code=400, detail="Invalid answer for Multiple Choice question")
 
+                question_type = True
+
             # Check if the question is required
             if question.id in required_questions_ids:
                 # Check if the feedback is empty
@@ -128,6 +133,14 @@ async def post_student_feedback(
                 # remuve id from required_questions_ids
                 required_questions_ids.remove(question.id)
 
+            # Append the feedback with question type
+            feedbaks_with_qtype.append(schema.create_feedback_with_qtype(
+                question_id=feedback.question_id,
+                answer=feedback.answer,
+                type = question_type
+            ))
+
+
         # Check if all required questions have been answered
         if len(required_questions_ids) != 0:
             raise HTTPException(status_code=400, detail="Feedback cannot be empty for required questions")
@@ -135,7 +148,7 @@ async def post_student_feedback(
 
         # creates feedbacks
         feedbaks = await crud.create_student_feedbacks(db=db,
-                                                       feedbacks=feedbacks,
+                                                       feedbacks=feedbaks_with_qtype,
                                                        subject_id=subject_id)
 
         # enrrolment feed bak true
