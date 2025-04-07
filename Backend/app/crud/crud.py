@@ -345,3 +345,61 @@ async def archive_question_by_id(db: Session, question_id: int,action: bool):
         return "Question archived successfully"
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))
+
+# get the subject_id answer question_type True from enrolment
+from sqlalchemy import func, case
+
+async def get_subject_id_answer_question_type_true(db: Session) -> dict:
+    try:
+        result = db.execute(
+            select(
+                Feedback.subject_id,
+                func.count(case((Feedback.answer == "Excellent", 1))).label("excellent"),
+                func.count(case((Feedback.answer == "Very Good", 1))).label("very_Good"),
+                func.count(case((Feedback.answer == "Good", 1))).label("good"),
+                func.count(case((Feedback.answer == "Fair", 1))).label("fair"),
+                func.count(case((Feedback.answer == "Poor", 1))).label("poor"),
+                func.count(case((Feedback.answer == "Very Poor", 1))).label("very_Poor"),
+            )
+            .where(
+                Feedback.qestion_type == True
+            )
+            .group_by(Feedback.subject_id)
+        )
+
+        feedbacks = result.mappings().all()
+
+        dicts = {}
+        for row in feedbacks:
+            dicts[row.subject_id] = {
+                "excellent": row.excellent,
+                "very_Good": row.very_Good,
+                "good": row.good,
+                "fair": row.fair,
+                "poor": row.poor,
+                "very_Poor": row.very_Poor
+            }
+
+        return dicts
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))
+
+async def get_all_teachers_id_subject_id(db: Session) -> List[schema.Teacher_id_subject_id]:
+    try:
+        result = db.execute(
+            select(
+                Teacher.id.label("teacher_id"),
+                Teacher.name.label("teacher_name"),
+                func.array_agg(Subject.id).label("subject_ids")
+            )
+            .join(Subject, Subject.teacher_id == Teacher.id)
+            .group_by(Teacher.id)
+        )
+
+        rows = result.mappings().all()
+
+        return [schema.Teacher_id_subject_id(**row) for row in rows]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))

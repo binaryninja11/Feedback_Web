@@ -194,3 +194,30 @@ class ChangeQuestionOrder(BaseModel):
 
 class Action_to_archive(BaseModel):
     is_active: bool = False
+
+class Subject_id_answer(BaseModel):
+    subject_id: int
+    excellent: int
+    very_Good: int
+    good: int
+    fair: int
+    poor: int
+    very_Poor: int
+
+    class Config:
+        from_attributes = True
+
+class Teacher_id_subject_id(BaseModel):
+    teacher_id: int
+    teacher_name : str
+    subject_ids: list[int]
+
+    class Config:
+        from_attributes = True
+
+class Teacher_with_Rating(BaseModel):
+    teacher_name: str
+    rating: float
+
+    class Config:
+        from_attributes = True

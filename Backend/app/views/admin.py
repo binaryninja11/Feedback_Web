@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.schemas import schema
 from app.crud import crud
+from app.task import task
 from app.schemas.schema import Token, TokenData, Student
 from app.crud.crud import get_student_by_stdid
 from app.dependencies import get_db
@@ -214,6 +215,13 @@ async def add_student_to_subject(
 
         if not student:
             raise HTTPException(status_code=400, detail="Student not found")
+
+        # check to already enrolled
+
+        enrolled_student = await crud.get_enrollment_by_student_and_subject(db=db, student_id=student.id, subject_id=enroll.subject_id)
+
+        if enrolled_student:
+            raise HTTPException(status_code=400, detail="Student already enrolled in this subject")
 
         # Add student to subject
         await crud.create_enrollment(db=db, subject_id=enroll.subject_id, student_id=student.id)
@@ -426,5 +434,27 @@ async def create_new_academic_year_or_semester(
 
 
 
+# top 5 Teachers with high reating
+@router.get("/top/teachers",response_model=List[schema.Teacher_with_Rating])
+async def get_top_five_teachers(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
 
+        top_5_teachers = await task.calculate_subject_answer(db=db)
+
+        if not top_5_teachers:
+            raise HTTPException(status_code=404, detail="No teachers found")
+
+        return top_5_teachers[:5]
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
