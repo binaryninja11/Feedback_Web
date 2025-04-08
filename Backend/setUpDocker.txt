@@ -1,0 +1,22 @@
+docker build -t myimage .
+ 
+docker stop mycontainer
+docker rm mycontainer
+docker rmi myimage
+
+docker run -d --name mycontainer -p 8000:8000 myimage
+docker logs mycontainer
+docker ps
+
+docker login
+docker login --username 7arb7 --password YOUR_ACCESS_TOKEN
+
+docker logout
+docker login
+
+
+docker tag myimage 7arb7/feedbackweb:v1.0
+docker push 7arb7/feedbackweb:latest
+docker push 7arb7/feedbackweb:v1.06
+
+
