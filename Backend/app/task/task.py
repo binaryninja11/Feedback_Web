@@ -54,7 +54,7 @@ async def calculate_subject_answer(db: Session) -> List[schema.Teacher_with_Rati
             rating=round(rating, 2)
         ))
 
-    result.sort(key=lambda x: x.rating, reverse=True)
+    result
 
     return result
 

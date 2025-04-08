@@ -449,6 +449,8 @@ async def get_top_five_teachers(
         if not top_5_teachers:
             raise HTTPException(status_code=404, detail="No teachers found")
 
+        top_5_teachers.sort(key=lambda x: x.rating, reverse=True)
+
         return top_5_teachers[:5]
 
     except HTTPException as http_exc:
@@ -458,3 +460,29 @@ async def get_top_five_teachers(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# top 5 worst Teachers with high reating
+@router.get("/worst/teachers",response_model=List[schema.Teacher_with_Rating])
+async def get_worst_five_teachers(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        top_5_teachers = await task.calculate_subject_answer(db=db)
+
+        if not top_5_teachers:
+            raise HTTPException(status_code=404, detail="No teachers found")
+
+        top_5_teachers.sort(key=lambda x: x.rating)  # ascending order
+        return top_5_teachers[:5]
+
+
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
