@@ -17,6 +17,7 @@ origins = [
     "http://127.0.0.1:5500",  # Madina's port
     "http://localhost:8000",
     "http://10.10.3.71",  # Add this line for your backend IP
+    "ttpusurvey.netlify.app" # front
 ]
 # http://10.10.3.71:8000
 app.add_middleware(
