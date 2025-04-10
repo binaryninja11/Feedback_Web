@@ -15,8 +15,8 @@ docker logout
 docker login
 
 
-docker tag myimage 7arb7/feedbackweb:v1.07
+docker tag myimage 7arb7/feedbackweb:v1.08
 docker push 7arb7/feedbackweb:latest
-docker push 7arb7/feedbackweb:v1.07
+docker push 7arb7/feedbackweb:v1.08
 
 
