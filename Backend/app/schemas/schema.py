@@ -253,14 +253,14 @@ class SubjectDetail(BaseModel):
     class Config:
         from_attributes = True
 
-class ResponseFilter(BaseModel):
-    subject_id: int
-    Average_Rating: str
-    Teacher_Name: str
-    Track: Major.value
-    Level: int
-    Semester: int
+# class ResponseFilter(BaseModel):
+#     subject_id: int
+#     Average_Rating: str
+#     Teacher_Name: str
+#     Track: Major.value
+#     Level: int
+#     Semester: int
 
-    class Config:
-        from_attributes = True
+#     class Config:
+#         from_attributes = True
 
