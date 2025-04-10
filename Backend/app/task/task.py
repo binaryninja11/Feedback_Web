@@ -5,6 +5,20 @@ from sqlalchemy.orm import Session
 from app.crud import crud
 from app.schemas import schema
 
+def get_rating_label(score: float) -> str:
+    if score >= 9.0:
+        return "Excellent"
+    elif score >= 8.0:
+        return "Very Good"
+    elif score >= 6.0:
+        return "Good"
+    elif score >= 4.0:
+        return "Fair"
+    elif score >= 2.0:
+        return "Poor"
+    else:
+        return "Very Poor"
+
 
 def calculate(VP: int, P: int, F: int, G: int, VG: int, E: int) -> float:
     total = VP + P + F + G + VG + E
@@ -15,7 +29,7 @@ def calculate(VP: int, P: int, F: int, G: int, VG: int, E: int) -> float:
     return rating
 
 # calculate the subject answer
-async def calculate_subject_answer(db: Session) -> List[schema.Teacher_with_Rating]:
+async def calculate_subject_answer_teacher(db: Session) -> List[schema.Teacher_with_Rating]:
     # Get the feedbacks grouped by subject
     feedbacks = await crud.get_subject_id_answer_question_type_true(db=db)
 
@@ -54,8 +68,30 @@ async def calculate_subject_answer(db: Session) -> List[schema.Teacher_with_Rati
             rating=round(rating, 2)
         ))
 
-    result
-
     return result
 
+
+async def calculate_subject_ratings(db: Session) -> List[schema.Subject_Rating]:
+    feedbacks = await crud.get_subject_id_answer_question_type_true(db=db)
+
+    result = []
+
+    for subject_id, scores in feedbacks.items():
+        rating = calculate(
+            VP=scores["very_Poor"],
+            P=scores["poor"],
+            F=scores["fair"],
+            G=scores["good"],
+            VG=scores["very_Good"],
+            E=scores["excellent"]
+        )
+
+        subject = await crud.get_subject_by_id(db, subject_id)
+        result.append(schema.Subject_Rating(
+            subject_id=subject_id,
+            subject_name=subject.subject_name,
+            rating=round(rating, 2)
+        ))
+
+    return result
 

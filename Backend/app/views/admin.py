@@ -136,6 +136,31 @@ async def get_all_teachers(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# get information detail of subject
+@router.get("/subject/{subject_id}", response_model=schema.SubjectDetail)
+async def get_subject_detail(
+    subject_id: int,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        subject = await crud.get_subject_feedback(db=db, subject_id=subject_id)
+
+        if not subject:
+            raise HTTPException(status_code=404, detail="Subject not found")
+
+        return subject
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
 #  get all subjects id and name
 @router.get("/subjects", response_model=List[schema.ResponseSujectIdName])
 async def get_all_subjects(
@@ -444,7 +469,7 @@ async def get_top_five_teachers(
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
-        top_5_teachers = await task.calculate_subject_answer(db=db)
+        top_5_teachers = await task.calculate_subject_answer_teacher(db=db)
 
         if not top_5_teachers:
             raise HTTPException(status_code=404, detail="No teachers found")
@@ -470,7 +495,7 @@ async def get_worst_five_teachers(
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
-        top_5_teachers = await task.calculate_subject_answer(db=db)
+        top_5_teachers = await task.calculate_subject_answer_teacher(db=db)
 
         if not top_5_teachers:
             raise HTTPException(status_code=404, detail="No teachers found")
@@ -478,7 +503,30 @@ async def get_worst_five_teachers(
         top_5_teachers.sort(key=lambda x: x.rating)  # ascending order
         return top_5_teachers[:5]
 
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# top 5 subjects with high reting
+@router.get("/top/subjects", response_model=List[schema.Subject_Rating])
+async def get_top_five_subjects(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        subjects = await task.calculate_subject_ratings(db=db)
+
+        if not subjects:
+            raise HTTPException(status_code=404, detail="No subjects found")
+
+        subjects.sort(key=lambda x: x.rating, reverse=True)
+        return subjects[:5]
 
     except HTTPException as http_exc:
         raise http_exc
@@ -486,3 +534,30 @@ async def get_worst_five_teachers(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+
+# top 5 worst subjects with high reting
+@router.get("/worst/subjects", response_model=List[schema.Subject_Rating])
+async def get_worst_five_subjects(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        subjects = await task.calculate_subject_ratings(db=db)
+
+        if not subjects:
+            raise HTTPException(status_code=404, detail="No subjects found")
+
+        subjects.sort(key=lambda x: x.rating)
+        return subjects[:5]
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+

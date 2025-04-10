@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.models.dbmodel import Student, Teacher, Subject, Enrollment, Question, Feedback
 from app.schemas import schema
+from app.task import task
 from fastapi import HTTPException
 
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import label
+
 
 
 async def create_student(db: Session, student: schema.SignUpStudent):
@@ -400,6 +402,68 @@ async def get_all_teachers_id_subject_id(db: Session) -> List[schema.Teacher_id_
         rows = result.mappings().all()
 
         return [schema.Teacher_id_subject_id(**row) for row in rows]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))
+
+async def get_subject_feedback(db: Session, subject_id: int) -> schema.SubjectDetail:
+    try:
+        subject = await get_subject_by_id(db=db, subject_id=subject_id)
+        if not subject:
+            raise HTTPException(status_code=400, detail="Subject not found")
+        teacher = await get_teacher_by_id(db=db, teacher_id=subject.teacher_id)
+
+        result = db.execute(
+            select(
+                func.count(case((Feedback.answer == "Excellent", 1))).label("excellent"),
+                func.count(case((Feedback.answer == "Very Good", 1))).label("very_Good"),
+                func.count(case((Feedback.answer == "Good", 1))).label("good"),
+                func.count(case((Feedback.answer == "Fair", 1))).label("fair"),
+                func.count(case((Feedback.answer == "Poor", 1))).label("poor"),
+                func.count(case((Feedback.answer == "Very Poor", 1))).label("very_Poor"),
+            )
+            .where(Feedback.subject_id == subject_id)
+            .group_by(Feedback.subject_id)
+        )
+
+        row = result.mappings().first()
+
+        if not row:
+            row = {
+                "excellent": 0, "very_Good": 0, "good": 0,
+                "fair": 0, "poor": 0, "very_Poor": 0
+            }
+
+        total = (
+            row["excellent"] + row["very_Good"] + row["good"] +
+            row["fair"] + row["poor"] + row["very_Poor"]
+        )
+
+        if total == 0:
+            average = 0.0
+        else:
+            sum_score = (
+                row["excellent"] * 10 +
+                row["very_Good"] * 9 +
+                row["good"] * 7 +
+                row["fair"] * 5 +
+                row["poor"] * 3 +
+                row["very_Poor"] * 1
+            )
+            average = round(sum_score / total, 2)
+            label = task.get_rating_label(average)
+
+        return schema.SubjectDetail(
+            subject_id=subject.id,
+            teacher_name=f"{teacher.name} {teacher.last_name}",
+            subject_name=subject.subject_name,
+            major=subject.major,
+            level=subject.level,
+            start_year=subject.start_year,
+            semester=subject.semester,
+            feedback=schema.FeedbackName(**row),
+            avarage=label
+        )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))

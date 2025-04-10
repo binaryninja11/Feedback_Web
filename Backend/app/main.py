@@ -15,9 +15,9 @@ origins = [
     "http://localhost:3000",  # Common React dev server port
     "http://localhost:5173",  # Add this line for Vite
     "http://127.0.0.1:5500",  # Madina's port
-    "http://localhost:8000",
+    "http://localhost:8000",  # Fast API port
     "http://10.10.3.71",  # Add this line for your backend IP
-    "https://ttpusurvey.netlify.app" # front
+    "https://ttpusurvey.netlify.app" #  Bexzod's port
     # "https://migrationuz.netlify.app",
 ]
 # http://10.10.3.71:8000

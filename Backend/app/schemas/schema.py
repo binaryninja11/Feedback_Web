@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import date  # Fix for start_year
@@ -221,3 +221,46 @@ class Teacher_with_Rating(BaseModel):
 
     class Config:
         from_attributes = True
+
+class Subject_Rating(BaseModel):
+    subject_id: int
+    subject_name: str
+    rating: float = 0.0
+
+    class Config:
+        from_attributes = True
+
+class FeedbackName(BaseModel):
+    excellent: int = 0
+    very_Good: int = 0
+    good: int = 0
+    fair: int = 0
+    poor: int = 0
+    very_Poor: int = 0
+
+
+class SubjectDetail(BaseModel):
+    subject_id: int
+    teacher_name: str
+    subject_name: str
+    major: Major
+    level: int
+    start_year: date
+    semester: int
+    feedback: FeedbackName
+    avarage: str
+
+    class Config:
+        from_attributes = True
+
+class ResponseFilter(BaseModel):
+    subject_id: int
+    Average_Rating: str
+    Teacher_Name: str
+    Track: Major.value
+    Level: int
+    Semester: int
+
+    class Config:
+        from_attributes = True
+
