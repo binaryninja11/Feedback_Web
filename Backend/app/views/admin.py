@@ -561,3 +561,68 @@ async def get_worst_five_subjects(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# filter
+@router.get("/filter", response_model=List[schema.ResponseFilter])
+async def filter_subjects(
+        filter: schema.GetFilterBody,
+        current_user: Annotated[Student, Depends(get_current_user)],
+        db: Session = Depends(get_db)
+):
+    try:
+        # Enforce access control if needed:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        # Check if the filter is valid
+        filterd_subjects = await crud.get_subjects_by_filter(db=db, filter=filter)
+
+
+        if not filterd_subjects:
+            raise HTTPException(status_code=404, detail="No subjects found")
+
+        # Get the feedback aggregation for subjects.
+        feedbacks = await crud.get_subject_id_answer_question_type_true(db)
+
+        response_list = []
+
+        for subj in filterd_subjects:
+            # Get the teacher information
+            teacher_obj = await crud.get_teacher_by_id(db=db, teacher_id=subj.teacher_id)
+            # Compute average rating if there is feedback
+            fb = feedbacks.get(subj.id)
+            if fb:
+                total = fb["excellent"] + fb["very_Good"] + fb["good"] + fb["fair"] + fb["poor"] + fb["very_Poor"]
+                if total == 0:
+                    avg_label = "No Feedback"
+                else:
+                    sum_score = (
+                            fb["excellent"] * 10 +
+                            fb["very_Good"] * 9 +
+                            fb["good"] * 7 +
+                            fb["fair"] * 5 +
+                            fb["poor"] * 3 +
+                            fb["very_Poor"] * 1
+                    )
+                    avg_value = sum_score / total
+                    avg_label = task.get_rating_label(avg_value)
+            else:
+                avg_label = "No Feedback"
+
+            response_list.append(
+                schema.ResponseFilter(
+                    subject_id=subj.id,
+                    subject_name=subj.subject_name,
+                    average_Rating=avg_label,
+                    teacher_Name=f"{teacher_obj.name} {teacher_obj.last_name}",
+                    major=subj.major,
+                    level=subj.level,
+                    semester=subj.semester
+                )
+            )
+
+        return response_list
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")

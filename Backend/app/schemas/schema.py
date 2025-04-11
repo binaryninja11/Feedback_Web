@@ -1,5 +1,7 @@
 import datetime
 from typing import Optional, Union
+
+from fastapi import Query
 from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import date  # Fix for start_year
@@ -253,14 +255,22 @@ class SubjectDetail(BaseModel):
     class Config:
         from_attributes = True
 
-# class ResponseFilter(BaseModel):
-#     subject_id: int
-#     Average_Rating: str
-#     Teacher_Name: str
-#     Track: Major.value
-#     Level: int
-#     Semester: int
+class GetFilterBody(BaseModel):
+    level: Optional[int] = None
+    major: Optional[Major] = None
+    semester: Optional[int] = None
+    teacherId: Optional[int] = None
 
-#     class Config:
-#         from_attributes = True
+
+class ResponseFilter(BaseModel):
+    subject_id: int
+    subject_name: str
+    average_Rating: str
+    teacher_Name: str
+    major: Major
+    level: int
+    semester: int
+
+    class Config:
+        from_attributes = True
 
