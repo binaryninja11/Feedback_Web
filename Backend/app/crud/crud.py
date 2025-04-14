@@ -468,7 +468,7 @@ async def get_subject_feedback(db: Session, subject_id: int) -> schema.SubjectDe
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))
 
-async def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody):
+def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody):
     try:
         query = db.query(Subject).filter(Subject.is_active == True)
 
@@ -482,7 +482,7 @@ async def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody):
             query = query.filter(Subject.teacher_id == filter.teacherId)
 
         return query.all()
-
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))
+
 

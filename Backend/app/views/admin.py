@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 import jwt
 import os
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status, APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter, Body
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError, ExpiredSignatureError
 from passlib.context import CryptContext
@@ -564,31 +564,32 @@ async def get_worst_five_subjects(
 # filter
 @router.get("/filter", response_model=List[schema.ResponseFilter])
 async def filter_subjects(
-        filter: schema.GetFilterBody,
-        current_user: Annotated[Student, Depends(get_current_user)],
-        db: Session = Depends(get_db)
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    filter: Optional[schema.GetFilterBody] = Body(default=None),
 ):
     try:
-        # Enforce access control if needed:
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
-        # Check if the filter is valid
-        filterd_subjects = await crud.get_subjects_by_filter(db=db, filter=filter)
+        # If no filter is provided, set filter to an instance with all None values
+        if filter is None:
+            filter = schema.GetFilterBody()
 
+        filtered_subjects = crud.get_subjects_by_filter(db=db, filter=filter)
 
-        if not filterd_subjects:
+        if not filtered_subjects:
             raise HTTPException(status_code=404, detail="No subjects found")
 
-        # Get the feedback aggregation for subjects.
+        # Retrieve feedback aggregation if necessary
         feedbacks = await crud.get_subject_id_answer_question_type_true(db)
 
         response_list = []
-
-        for subj in filterd_subjects:
-            # Get the teacher information
+        for subj in filtered_subjects:
+            # Retrieve teacher information
             teacher_obj = await crud.get_teacher_by_id(db=db, teacher_id=subj.teacher_id)
-            # Compute average rating if there is feedback
+
+            # Calculate average rating as before (using your logic)
             fb = feedbacks.get(subj.id)
             if fb:
                 total = fb["excellent"] + fb["very_Good"] + fb["good"] + fb["fair"] + fb["poor"] + fb["very_Poor"]
@@ -611,9 +612,9 @@ async def filter_subjects(
             response_list.append(
                 schema.ResponseFilter(
                     subject_id=subj.id,
-                    subject_name=subj.subject_name,
                     average_Rating=avg_label,
                     teacher_Name=f"{teacher_obj.name} {teacher_obj.last_name}",
+                    subject_name=subj.subject_name,
                     major=subj.major,
                     level=subj.level,
                     semester=subj.semester
