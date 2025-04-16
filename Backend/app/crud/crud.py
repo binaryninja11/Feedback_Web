@@ -19,8 +19,6 @@ async def create_student(db: Session, student: schema.SignUpStudent):
 
     new_student = Student(
         stdid=student.stdid,
-        name=student.name,
-        last_name=student.last_name,
         hashed_password=student.password,
         level=student.level,
         major=student.major,
@@ -72,6 +70,8 @@ async def get_subject_by_id(db: Session, subject_id: int):
 async def get_subject_by_name(db: Session, subject_name: str):
     return db.query(Subject).filter(Subject.subject_name == subject_name).first()
 
+async def get_subjects_by_level_and_major(db: Session, level: int, major: str) -> List[int]:
+    return [subject.id for subject in db.query(Subject).filter(Subject.level == level, Subject.major == major).all()]
 async def create_subject(db: Session, subject: schema.CreateSubject,teacher_id: int):
     new_subject = Subject(
         subject_name=subject.subject_name,
@@ -101,6 +101,24 @@ async def create_enrollment(db: Session, subject_id:int, student_id:int):
     db.refresh(new_enrollment)
     return new_enrollment
 
+async def create_enrollments(db: Session, stId:int, subject_ids: List[int]):
+    try:
+        new_enrollments = [
+            Enrollment(
+                student_id=stId,
+                subject_id=subject_id,
+                feedback=False,
+                is_active=True
+            )
+            for subject_id in subject_ids
+        ]
+        db.add_all(new_enrollments)
+        db.commit()
+        db.refresh(new_enrollments)
+        return new_enrollments
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 async def get_enrollment_by_and_subject_id(db: Session,subject_id: int) -> List[int]:
     return [enrollments.student_id for enrollments in db.query(Enrollment).filter(Enrollment.subject_id == subject_id).all()]
 
@@ -468,7 +486,7 @@ async def get_subject_feedback(db: Session, subject_id: int) -> schema.SubjectDe
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))
 
-def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody):
+def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody,teacherId:int = None):
     try:
         query = db.query(Subject).filter(Subject.is_active == True)
 
@@ -479,7 +497,7 @@ def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody):
         if filter.semester is not None:
             query = query.filter(Subject.semester == filter.semester)
         if filter.teacherId is not None:
-            query = query.filter(Subject.teacher_id == filter.teacherId)
+            query = query.filter(Subject.teacher_id == teacherId)
 
         return query.all()
     except Exception as e:

@@ -9,8 +9,6 @@ class Student(Base):
     __tablename__ = "students"
     id = Column(Integer, primary_key=True, index=True)
     stdid = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, index=True, nullable=False)
-    last_name = Column(String, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     level = Column(Integer, nullable=False)
     major = Column(String, nullable=False)

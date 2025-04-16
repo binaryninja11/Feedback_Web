@@ -31,8 +31,6 @@ class AcademicYearOrSemester(str, Enum):
 
 class SignUpStudent(BaseModel):
     stdid: str
-    name: str
-    last_name: str
     password: str
     level: int = Field(ge=1, le=4)  # Fixed
 
@@ -44,8 +42,6 @@ class CreateStudent(SignUpStudent):
 class Student(BaseModel):
     id: int
     stdid: str
-    name: str
-    last_name: str
     level: int
     major: Major
     is_active: bool
@@ -259,7 +255,7 @@ class GetFilterBody(BaseModel):
     level: Optional[int] = None
     major: Optional[Major] = None
     semester: Optional[int] = None
-    teacherId: Optional[int] = None
+    teacherId: Optional[str] = None
 
 
 class ResponseFilter(BaseModel):

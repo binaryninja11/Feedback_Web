@@ -209,14 +209,22 @@ async def create_new_subjects(
         # Create the subject
         new_subject = await crud.create_subject(db=db, subject=subject, teacher_id=teacher.id)
 
-        return "Subject created successfully"
+        # Enroll all students
+        student_ids = await crud.get_student_by_level_and_major(db=db, level=subject.level, major=subject.major)
+        enrolled_students = await crud.get_enrollment_by_and_subject_id(db=db, subject_id=new_subject.id)
+
+        student_ids = [student_id for student_id in student_ids if student_id not in enrolled_students]
+
+        for student_id in student_ids:
+            await crud.create_enrollment(db=db, subject_id=new_subject.id, student_id=student_id)
+
+        return {"message": "Subject created successfully", "subject_id": new_subject.id}
 
     except HTTPException as http_exc:
         raise http_exc
-    except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
 
 # Add student to subject by student stdid
 @router.post("/subject/add_student")
@@ -562,7 +570,7 @@ async def get_worst_five_subjects(
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
 # filter
-@router.get("/filter", response_model=List[schema.ResponseFilter])
+@router.post("/filter", response_model=List[schema.ResponseFilter])
 async def filter_subjects(
     current_user: Annotated[Student, Depends(get_current_user)],
     db: Session = Depends(get_db),
@@ -576,10 +584,22 @@ async def filter_subjects(
         if filter is None:
             filter = schema.GetFilterBody()
 
-        filtered_subjects = crud.get_subjects_by_filter(db=db, filter=filter)
+        teacher_id = None
+
+        # If teacherId is provided, retrieve the teacher ID
+        if filter.teacherId:
+            # Assuming teacherId is a string and needs to be converted to int
+            teacher = await crud.get_teacher_by_tid(db=db, teacher_tid=filter.teacherId)
+            if teacher:
+                teacher_id = teacher.id
+            else:
+                raise HTTPException(status_code=400, detail="Teacher not found")
+
+        # Get filtered subjects based on the provided filters
+        filtered_subjects = crud.get_subjects_by_filter(db=db, filter=filter, teacherId=teacher_id)
 
         if not filtered_subjects:
-            raise HTTPException(status_code=404, detail="No subjects found")
+            return []
 
         # Retrieve feedback aggregation if necessary
         feedbacks = await crud.get_subject_id_answer_question_type_true(db)
@@ -627,3 +647,4 @@ async def filter_subjects(
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+

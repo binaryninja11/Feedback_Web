@@ -22,6 +22,17 @@ async def create_student(student: schema.SignUpStudent, db: Session = Depends(ge
         student.password = auth_utils.pwd_context.hash(student.password)
         st = await crud.create_student(db=db, student=student)
 
+        # add student to the subjects
+        # get all subjects with students level and major
+        subject_ids = await crud.get_subjects_by_level_and_major(db=db, level=student.level, major=student.major)
+        if not subject_ids:
+            raise HTTPException(status_code=200, detail="student created but No subjects found for this student")
+
+        # create enrollment
+        enrollment = await crud.create_enrollments(db=db, stId=st.id, subject_ids=subject_ids)
+        if not enrollment:
+            raise HTTPException(status_code=200, detail="student created but No subjects found for this student")
+
         return st
 
     except HTTPException as http_exc:
