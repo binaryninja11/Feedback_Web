@@ -101,8 +101,10 @@ async def create_enrollment(db: Session, subject_id:int, student_id:int):
     db.refresh(new_enrollment)
     return new_enrollment
 
-async def create_enrollments(db: Session, stId:int, subject_ids: List[int]):
+
+async def create_enrollments(db: Session, stId: int, subject_ids: List[int]):
     try:
+        # Create a list of Enrollment objects
         new_enrollments = [
             Enrollment(
                 student_id=stId,
@@ -112,13 +114,24 @@ async def create_enrollments(db: Session, stId:int, subject_ids: List[int]):
             )
             for subject_id in subject_ids
         ]
+
+        # Add all enrollments to the session
         db.add_all(new_enrollments)
+
+        # Commit the session to persist changes
         db.commit()
-        db.refresh(new_enrollments)
+
+        # Refresh each individual Enrollment object
+        for enrollment in new_enrollments:
+            db.refresh(enrollment)
+
         return new_enrollments
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
 async def get_enrollment_by_and_subject_id(db: Session,subject_id: int) -> List[int]:
     return [enrollments.student_id for enrollments in db.query(Enrollment).filter(Enrollment.subject_id == subject_id).all()]
 
