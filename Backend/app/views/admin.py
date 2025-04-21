@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, List, Optional
 
+import logging
+
 import jwt
 import os
 from dotenv import load_dotenv
@@ -577,7 +579,8 @@ async def filter_subjects(
     filter: Optional[schema.GetFilterBody] = Body(default=None),
 ):
     try:
-        print(f"arrive: {filter}")
+        logger.info('arrive:',filter)
+        
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
@@ -641,7 +644,8 @@ async def filter_subjects(
                     semester=subj.semester
                 )
             )
-        print(f"response: {response_list}")
+        
+        logger.info('response:',response_list)
         return response_list
 
     except HTTPException as http_exc:
