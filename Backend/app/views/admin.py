@@ -577,6 +577,7 @@ async def filter_subjects(
     filter: Optional[schema.GetFilterBody] = Body(default=None),
 ):
     try:
+        print(f"arrive: {filter}")
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
@@ -640,7 +641,7 @@ async def filter_subjects(
                     semester=subj.semester
                 )
             )
-
+        print(f"response: {response_list}")
         return response_list
 
     except HTTPException as http_exc:
