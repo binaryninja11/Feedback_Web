@@ -470,19 +470,20 @@ async def get_subject_feedback(db: Session, subject_id: int) -> schema.SubjectDe
             row["fair"] + row["poor"] + row["very_Poor"]
         )
 
-        if total == 0:
-            average = 0.0
-        else:
+        label = "No Feedback"
+        if total != 0:
             sum_score = (
-                row["excellent"] * 10 +
-                row["very_Good"] * 9 +
-                row["good"] * 7 +
-                row["fair"] * 5 +
-                row["poor"] * 3 +
-                row["very_Poor"] * 1
+                    row["excellent"] * 10 +
+                    row["very_Good"] * 9 +
+                    row["good"] * 7 +
+                    row["fair"] * 5 +
+                    row["poor"] * 3 +
+                    row["very_Poor"] * 1
             )
             average = round(sum_score / total, 2)
             label = task.get_rating_label(average)
+        else:
+            average = 0.0
 
         return schema.SubjectDetail(
             subject_id=subject.id,
@@ -516,4 +517,26 @@ def get_subjects_by_filter(db: Session, filter: schema.GetFilterBody,teacherId:i
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))
 
+
+def get_comments_by_subject_id(db: Session, subject_id: int, start: int = 0, skip: int = 10) -> List[schema.ResponseComment]:
+    try:
+        result = db.execute(
+            select(
+                Question.body.label("question_body"),
+                Feedback.answer
+            )
+            .join(Question, Feedback.question_id == Question.id)
+            .filter(
+                Feedback.subject_id == subject_id,
+                Feedback.qestion_type == False  # <-- moved here if question_type belongs to Question
+            )
+            .offset(start)
+            .limit(skip)
+        )
+
+        comments = result.mappings().all()
+        return [schema.ResponseComment(**comment) for comment in comments]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))
 

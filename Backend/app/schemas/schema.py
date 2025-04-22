@@ -270,3 +270,9 @@ class ResponseFilter(BaseModel):
     class Config:
         from_attributes = True
 
+class ResponseComment(BaseModel):
+    question_body: str
+    answer: str
+
+    class Config:
+        from_attributes = True

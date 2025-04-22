@@ -649,3 +649,27 @@ async def filter_subjects(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# get comments of subject
+@router.get("/comments/{subject_id}", response_model=List[schema.ResponseComment])
+async def get_comments(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    subject_id: int,
+    start: int = 0,
+    skip: int = 10,
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        comments = crud.get_comments_by_subject_id(db=db, subject_id=subject_id, start=start, skip=skip)
+        return comments
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+
+
