@@ -540,3 +540,43 @@ def get_comments_by_subject_id(db: Session, subject_id: int, start: int = 0, ski
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error: " + str(e))
 
+# get subjects feedback questions
+async def get_subject_feedback_questions(db: Session, subject_id: int) -> List[schema.ResponseQuestionWithAnswer]:
+    try:
+        result = db.execute(
+            select(
+                Question.body.label("question_body"),
+                func.count(case((Feedback.answer == "Excellent", 1))).label("excellent"),
+                func.count(case((Feedback.answer == "Very Good", 1))).label("very_Good"),
+                func.count(case((Feedback.answer == "Good", 1))).label("good"),
+                func.count(case((Feedback.answer == "Fair", 1))).label("fair"),
+                func.count(case((Feedback.answer == "Poor", 1))).label("poor"),
+                func.count(case((Feedback.answer == "Very Poor", 1))).label("very_Poor"),
+            )
+            .join(Feedback, Feedback.question_id == Question.id)
+            .filter(
+                Feedback.subject_id == subject_id,
+                Feedback.qestion_type == True  # fixed typo here
+            )
+            .group_by(Question.body)
+        )
+
+        rows = result.mappings().all()
+
+        return [
+            schema.ResponseQuestionWithAnswer(
+                question_body=row["question_body"],
+                answer={
+                    "excellent": row["excellent"],
+                    "very_Good": row["very_Good"],
+                    "good": row["good"],
+                    "fair": row["fair"],
+                    "poor": row["poor"],
+                    "very_Poor": row["very_Poor"]
+                }
+            )
+            for row in rows
+        ]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))

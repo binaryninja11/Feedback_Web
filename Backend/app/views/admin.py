@@ -672,4 +672,25 @@ async def get_comments(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+# get feedback of qustion subject detail
+@router.get("/feedback/question/{subject_id}", response_model=List[schema.ResponseQuestionWithAnswer])
+async def get_question_feedback_detail(
+        current_user: Annotated[Student, Depends(get_current_user)],
+        subject_id: int,
+        db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        feedback = await crud.get_subject_feedback_questions(db=db, subject_id=subject_id)
+
+        return feedback  # returns [] if empty, which is fine
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 

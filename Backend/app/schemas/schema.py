@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 from fastapi import Query
 from pydantic import BaseModel, Field
@@ -273,6 +273,13 @@ class ResponseFilter(BaseModel):
 class ResponseComment(BaseModel):
     question_body: str
     answer: str
+
+    class Config:
+        from_attributes = True
+
+class ResponseQuestionWithAnswer(BaseModel):
+    question_body: str
+    answer: Dict[str, int]
 
     class Config:
         from_attributes = True
