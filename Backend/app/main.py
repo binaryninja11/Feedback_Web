@@ -17,7 +17,7 @@ origins = [
     "http://127.0.0.1:5500",  # Madina's port
     "http://localhost:8000",  # Fast API port
     "http://10.10.3.71",  # Add this line for your backend IP
-    "https://ttpusurvey.netlify.app" #  Bexzod's port
+    "https://ttpusurvey.netlify.app", #  Bexzod's port
     "https://turin-commentary.vercel.app", # ismoil's ports
     "https://turin-feedback.netlify.app"
     # "https://migrationuz.netlify.app",
