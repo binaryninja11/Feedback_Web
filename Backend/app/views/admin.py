@@ -438,8 +438,27 @@ async def archive_question(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
+# Get current semester
+@router.get("/current/semester", response_model=schema.CurrentSemesterResponseModel)
+async def api_get_current_semester(
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
 
-# New academic year or semester API route
+        current_semester = await crud.get_current_semester_from_db(db=db)
+
+        return schema.CurrentSemesterResponseModel(semester=current_semester)
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
+# New academic year or semester
 @router.post("/newacademic")
 async def create_new_academic_year_or_semester(
     academic_year: schema.CreateAcademicYear,
@@ -450,20 +469,19 @@ async def create_new_academic_year_or_semester(
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
-        if academic_year.aos.value == schema.AcademicYearOrSemester.semester.value:
+        if academic_year.aos == schema.AcademicYearOrSemester.semester:
             return await crud.new_semester(db=db)
 
-        elif academic_year.aos.value == schema.AcademicYearOrSemester.academic_year.value:
-            return await crud.UpdateStudentLevel(db=db)
+        elif academic_year.aos == schema.AcademicYearOrSemester.academic_year:
+            return await crud.update_student_level(db=db)
 
-        raise HTTPException(status_code=400, detail="Invalid type, use 'semester' or 'academic'")
+        raise HTTPException(status_code=400, detail="Invalid type, use 'semester' or 'academic_year'")
 
     except HTTPException as http_exc:
         raise http_exc
-    except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
 
 
 
@@ -577,7 +595,6 @@ async def filter_subjects(
     filter: Optional[schema.GetFilterBody] = Body(default=None),
 ):
     try:
-        print(f"arrive: {filter}")
         if current_user.username != "admin":
             raise HTTPException(status_code=401, detail="Unauthorized access")
 
@@ -641,7 +658,6 @@ async def filter_subjects(
                     semester=subj.semester
                 )
             )
-        print(f"response: {response_list}")
         return response_list
 
     except HTTPException as http_exc:

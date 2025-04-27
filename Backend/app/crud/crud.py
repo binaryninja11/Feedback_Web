@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from app.models.dbmodel import Student, Teacher, Subject, Enrollment, Question, Feedback
+from app.models.dbmodel import Student, Teacher, Subject, Enrollment, Question, Feedback,Semester
 from app.schemas import schema
 from app.task import task
 from fastapi import HTTPException
@@ -139,19 +139,26 @@ async def get_enrollment_by_student_id(db: Session, student_id: int) -> List[int
     return [enrollments.subject_id for enrollments in db.query(Enrollment).filter(Enrollment.student_id == student_id).all()]
 
 async def get_enrollment_subjects_by_student_id(db: Session, student_id: int) -> List[schema.EnrollmentStudentSubjects]:
-    result = db.execute(
-        select(
-            Enrollment.subject_id,
-            Subject.subject_name,
-            Enrollment.feedback
+    try:
+        # Get the current semester
+        current_semester = await get_current_semester_from_db(db=db)
+
+        result = db.execute(
+            select(
+                Enrollment.subject_id,
+                Subject.subject_name,
+                Enrollment.feedback
+            )
+            .join(Subject, Enrollment.subject_id == Subject.id)
+            .filter(Enrollment.student_id == student_id, Subject.is_active == True, Subject.semester == current_semester)
         )
-        .join(Subject, Enrollment.subject_id == Subject.id)
-        .filter(Enrollment.student_id == student_id, Subject.is_active == True)
-    )
 
-    subjects = result.mappings().all()
+        subjects = result.mappings().all()
 
-    return [schema.EnrollmentStudentSubjects(**subject) for subject in subjects]
+        return [schema.EnrollmentStudentSubjects(**subject) for subject in subjects]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error: " + str(e))
+
 
 async def get_enrollment_by_student_and_subject(db: Session, student_id: int, subject_id: int):
     return db.query(Enrollment).filter(Enrollment.student_id == student_id, Enrollment.subject_id == subject_id).first()
@@ -309,25 +316,54 @@ async def enrollment_feedback_true(
 
     return "successfully updated feedback to true"
 
-# Delete all enrollments (New Semester)
+
+# Update Semester
 async def new_semester(db: Session):
     try:
-        db.query(Enrollment).delete(synchronize_session="fetch")
+        db.query(Semester).update({Semester.name: 2}, synchronize_session="fetch")
         db.commit()
-        return "Successfully updated semester"
+        return {"message": "Successfully updated semester"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
-# Update all student levels (New Academic Year)
-async def UpdateStudentLevel(db: Session):
+# Update Academic Year
+# the upgraded update_student_level
+async def update_student_level(db: Session):
     try:
+        # 1) bump every student's level
         db.query(Student).update({Student.level: Student.level + 1}, synchronize_session="fetch")
+        # 2) delete any who rolled past level 4
+        db.query(Student).filter(Student.level > 4).delete(synchronize_session="fetch")
+        # 3) clear old enrollments
         db.query(Enrollment).delete(synchronize_session="fetch")
-        db.commit()
-        return "Successfully updated academic year"
+        # 4) reset semester
+        db.query(Semester).update({Semester.name: 1}, synchronize_session="fetch")
+        db.commit()  # commit the above changes before re-enrolling
+
+        # 5) re-enroll each remaining student into subjects for their new level & major
+        students = db.query(Student).all()
+        for st in students:
+            # fetch the subject IDs that match this student’s new level & major
+            subject_ids = await get_subjects_by_level_and_major(db, st.level, st.major)
+            for sbid in subject_ids:
+                # reuse your CRUD helper to create each enrollment
+                await create_enrollment(db, subject_id=sbid, student_id=st.id)
+
+        return {"message": "Successfully updated academic year and re-enrolled students"}
+
     except Exception as e:
         db.rollback()
+        raise HTTPException(status_code=500, detail=f"Server error: {e}")
+
+# Get Current Semester
+async def get_current_semester_from_db(db: Session) -> int:
+    try:
+        current_semester = db.query(Semester).first()
+        if not current_semester:
+            raise HTTPException(status_code=404, detail="Semester not found")
+        return current_semester.name
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 

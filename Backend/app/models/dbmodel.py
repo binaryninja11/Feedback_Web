@@ -76,3 +76,8 @@ class Teacher(Base):
     is_active = Column(Boolean, default=True)
 
     subjects = relationship("Subject", back_populates="teacher", cascade="all, delete-orphan")
+
+class Semester(Base):
+    __tablename__ = "semesters"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(Integer, index=True, nullable=False)

@@ -283,3 +283,9 @@ class ResponseQuestionWithAnswer(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CurrentSemesterResponseModel(BaseModel):
+    semester: int
+
+    class Config:
+        from_attributes = True
