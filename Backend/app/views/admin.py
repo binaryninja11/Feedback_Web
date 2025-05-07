@@ -710,3 +710,34 @@ async def get_question_feedback_detail(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
 
+
+# pasword reset to 123456
+@router.put("/reset/password/{student_stdid}")
+async def reset_password(
+    student_stdid: str,
+    current_user: Annotated[Student, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    try:
+        if current_user.username != "admin":
+            raise HTTPException(status_code=401, detail="Unauthorized access")
+
+        # Check if the student exists
+        student = await crud.get_student_by_stdid(db=db, stdid=student_stdid)
+
+        if not student:
+            raise HTTPException(status_code=400, detail="Student not found")
+
+        # Reset password to 123456
+        hashed_password = get_password_hash("123456")
+        await crud.update_student_password(db=db, stdid=student_stdid, new_password=hashed_password)
+
+        return "Password reset successfully"
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error {str(e)}")
+

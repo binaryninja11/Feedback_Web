@@ -15,25 +15,28 @@ router = APIRouter(prefix='/students', tags=["students"])
 
 
 # ✅ create_student
-@router.post("", response_model=schema.Student)
+@router.post("", response_model=schema.Token)
 async def create_student(student: schema.SignUpStudent, db: Session = Depends(get_db)):
     try:
 
         student.password = auth_utils.pwd_context.hash(student.password)
         st = await crud.create_student(db=db, student=student)
 
+        # token
+        access_token = await auth_utils.create_access_token(data={"sub": student.stdid})
+
         # add student to the subjects
         # get all subjects with students level and major
         subject_ids = await crud.get_subjects_by_level_and_major(db=db, level=student.level, major=student.major)
         if not subject_ids:
-            raise HTTPException(status_code=200, detail="student created but No subjects found for this student")
+            return schema.Token(access_token=access_token, token_type="bearer")
 
         # create enrollment
         enrollment = await crud.create_enrollments(db=db, stId=st.id, subject_ids=subject_ids)
         if not enrollment:
-            raise HTTPException(status_code=200, detail="student created but No subjects found for this student")
+            return schema.Token(access_token=access_token, token_type="bearer")
 
-        return st
+        return schema.Token(access_token=access_token, token_type="bearer")
 
     except HTTPException as http_exc:
         raise http_exc

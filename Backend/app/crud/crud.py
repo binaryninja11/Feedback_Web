@@ -30,6 +30,21 @@ async def create_student(db: Session, student: schema.SignUpStudent):
     db.refresh(new_student)
     return new_student
 
+# update password of students by stdid
+async def update_student_password(db: Session, stdid: str, new_password: str):
+    try:
+        student = db.query(Student).filter(Student.stdid == stdid).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        student.hashed_password = new_password
+        db.commit()
+        db.refresh(student)
+        return student
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
 async def get_student_by_stdid(db: Session, stdid: str):
     return db.query(Student).filter(Student.stdid == stdid).first()
 
