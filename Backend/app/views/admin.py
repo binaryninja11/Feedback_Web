@@ -653,6 +653,7 @@ async def filter_subjects(
                     average_Rating=avg_label,
                     teacher_Name=f"{teacher_obj.name} {teacher_obj.last_name}",
                     subject_name=subj.subject_name,
+                    class_type=subj.class_type,
                     major=subj.major,
                     level=subj.level,
                     semester=subj.semester

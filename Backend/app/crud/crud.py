@@ -90,6 +90,7 @@ async def get_subjects_by_level_and_major(db: Session, level: int, major: str) -
 async def create_subject(db: Session, subject: schema.CreateSubject,teacher_id: int):
     new_subject = Subject(
         subject_name=subject.subject_name,
+        class_type = subject.class_type,
         major=subject.major,
         level=subject.level,
         start_year=subject.start_year,
@@ -540,6 +541,7 @@ async def get_subject_feedback(db: Session, subject_id: int) -> schema.SubjectDe
             subject_id=subject.id,
             teacher_name=f"{teacher.name} {teacher.last_name}",
             subject_name=subject.subject_name,
+            class_type=subject.class_type,
             major=subject.major,
             level=subject.level,
             start_year=subject.start_year,

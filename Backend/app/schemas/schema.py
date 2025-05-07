@@ -6,6 +6,11 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import date  # Fix for start_year
 
+class ClassType(str, Enum):
+    lecture = "Lecture"
+    practice = "Practice"
+    laboratory = "Laboratory"
+
 class Major(str, Enum):
     se = "Software Engineering"
     bm = "Business Management"
@@ -74,6 +79,7 @@ class Teacher(BaseModel):
 
 class CreateSubject(BaseModel):
     subject_name: str
+    class_type: ClassType
     major: Major
     level: int = Field(ge=1, le=4)  # Fixed
     start_year: date  # Fixed
@@ -241,6 +247,7 @@ class SubjectDetail(BaseModel):
     subject_id: int
     teacher_name: str
     subject_name: str
+    class_type: ClassType
     major: Major
     level: int
     start_year: date
@@ -261,6 +268,7 @@ class GetFilterBody(BaseModel):
 class ResponseFilter(BaseModel):
     subject_id: int
     subject_name: str
+    class_type: ClassType
     average_Rating: str
     teacher_Name: str
     major: Major

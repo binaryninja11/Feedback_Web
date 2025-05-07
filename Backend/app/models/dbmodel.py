@@ -20,6 +20,7 @@ class Subject(Base):
     __tablename__ = "subjects"
     id = Column(Integer, primary_key=True, index=True)
     subject_name = Column(String, index=True, nullable=False)
+    class_type = Column(String, index=True, nullable=False)
     major = Column(String, index=True, nullable=False)
     level = Column(Integer, index=True, nullable=False)
     start_year = Column(DateTime, default=datetime.utcnow, nullable=False)
