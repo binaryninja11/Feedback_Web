@@ -61,7 +61,7 @@ async def get_enrollment_subjects(
         subjects = await crud.get_enrollment_subjects_by_student_id(db=db, student_id=current_user.id)
 
         if not subjects:
-            raise HTTPException(status_code=400, detail="No subjects found for this student")
+            return [] # No subjects found for this student sent empty list
 
         return subjects
 
